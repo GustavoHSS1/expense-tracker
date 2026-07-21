@@ -11,10 +11,11 @@
   <div class="pagina">
 
     <header class="topo">
-      <div>
+      <div class="topo__titulo">
         <h1>Planilha de Gastos</h1>
         <p class="topo__subtitulo">Controle seus gastos por categoria</p>
       </div>
+      <button id="temaToggle" class="botao-tema" aria-label="Alternar tema claro/escuro">🌙</button>
       <button id="btnAdicionar" class="botao-gasto">+ Adicionar gasto</button>
     </header>
 
@@ -92,7 +93,7 @@
   <!-- ===== MODAL: adicionar gasto ===== -->
   <div id="overlay" class="overlay">
     <form id="formGasto" class="modal">
-      <h2>Novo gasto</h2>
+      <h2 id="modalTitulo">Novo gasto</h2>
 
       <label class="campo">
         Descrição
@@ -124,7 +125,7 @@
 
       <div class="modal__botoes">
         <button type="button" id="btnCancelar" class="botao-secundario">Cancelar</button>
-        <button type="submit" class="botao-primario">Adicionar</button>
+        <button type="submit" id="btnSubmeter" class="botao-primario">Adicionar</button>
       </div>
     </form>
   </div>

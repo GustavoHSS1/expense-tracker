@@ -31,6 +31,9 @@ const listaVazia = document.getElementById('listaVazia');
 const legenda = document.getElementById('legenda');
 const graficoVazio = document.getElementById('graficoVazio');
 const ctx = document.getElementById('graficoGastos');
+const modalTitulo = document.getElementById('modalTitulo');
+const btnSubmeter = document.getElementById('btnSubmeter');
+const temaToggle = document.getElementById('temaToggle');
 
 const statTotal = document.getElementById('statTotal');
 const statQtd = document.getElementById('statQtd');
@@ -38,8 +41,11 @@ const statMaiorCategoria = document.getElementById('statMaiorCategoria');
 const statMedia = document.getElementById('statMedia');
 
 let grafico = null;
+let editandoId = null; // null = criando um gasto novo; caso contrário, é o id do gasto em edição
 
 // ===== Plugin do Chart.js: escreve o total no centro da rosca =====
+// Lê as cores do tema atual (claro ou escuro) direto das variáveis CSS,
+// pra não ficar com texto escuro travado num fundo escuro (ou vice-versa).
 const centerTextPlugin = {
   id: 'centerText',
   afterDraw(chart) {
@@ -48,26 +54,50 @@ const centerTextPlugin = {
     const x = (left + right) / 2;
     const y = (top + bottom) / 2;
 
+    const estilos = getComputedStyle(document.documentElement);
+    const corTexto = estilos.getPropertyValue('--ink').trim() || '#16161d';
+    const corLabel = estilos.getPropertyValue('--muted').trim() || '#85859a';
+
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     ctx.font = '700 1.1rem Segoe UI, sans-serif';
-    ctx.fillStyle = '#16161d';
+    ctx.fillStyle = corTexto;
     ctx.fillText(formatarMoeda(total), x, y - 8);
 
     ctx.font = '600 0.7rem Segoe UI, sans-serif';
-    ctx.fillStyle = '#85859a';
+    ctx.fillStyle = corLabel;
     ctx.fillText('Total', x, y + 14);
 
     ctx.restore();
   },
 };
 
-// ===== Abrir/fechar modal =====
+// ===== Abrir modal para criar um gasto novo =====
 btnAdicionar.addEventListener('click', () => {
+  editandoId = null;
+  modalTitulo.textContent = 'Novo gasto';
+  btnSubmeter.textContent = 'Adicionar';
+  formGasto.reset();
   overlay.classList.add('aberto');
 });
+
+// ===== Abrir modal para editar um gasto existente =====
+function abrirEdicao(id) {
+  const gasto = gastos.find((g) => g.id === id);
+  if (!gasto) return;
+
+  editandoId = id;
+  modalTitulo.textContent = 'Editar gasto';
+  btnSubmeter.textContent = 'Salvar';
+
+  document.getElementById('descricao').value = gasto.descricao;
+  document.getElementById('valor').value = gasto.valor;
+  document.getElementById('categoria').value = gasto.categoria;
+
+  overlay.classList.add('aberto');
+}
 
 btnCancelar.addEventListener('click', fecharModal);
 
@@ -78,9 +108,34 @@ overlay.addEventListener('click', (e) => {
 function fecharModal() {
   overlay.classList.remove('aberto');
   formGasto.reset();
+  editandoId = null;
 }
 
-// ===== Adicionar novo gasto =====
+// ===== Tema claro/escuro =====
+const temaSalvo = localStorage.getItem('tema');
+if (temaSalvo === 'dark') {
+  document.documentElement.setAttribute('data-theme', 'dark');
+  temaToggle.textContent = '☀️';
+}
+
+temaToggle.addEventListener('click', () => {
+  const escuroAtivo = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  if (escuroAtivo) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('tema', 'light');
+    temaToggle.textContent = '🌙';
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('tema', 'dark');
+    temaToggle.textContent = '☀️';
+  }
+
+  // redesenha o gráfico pra pegar as cores do texto central no novo tema
+  if (grafico) grafico.update();
+});
+
+// ===== Adicionar ou salvar edição de um gasto =====
 formGasto.addEventListener('submit', (e) => {
   e.preventDefault();
 
@@ -90,12 +145,23 @@ formGasto.addEventListener('submit', (e) => {
 
   if (!descricao || !valor || valor <= 0) return;
 
-  gastos.push({
-    id: Date.now(),
-    descricao,
-    valor,
-    categoria,
-  });
+  if (editandoId !== null) {
+    // edição: acha o gasto pelo id e atualiza os campos
+    const gasto = gastos.find((g) => g.id === editandoId);
+    if (gasto) {
+      gasto.descricao = descricao;
+      gasto.valor = valor;
+      gasto.categoria = categoria;
+    }
+  } else {
+    // criação de um gasto novo
+    gastos.push({
+      id: Date.now(),
+      descricao,
+      valor,
+      categoria,
+    });
+  }
 
   salvar();
   renderizarTudo();
@@ -141,10 +207,17 @@ function renderizarLista() {
         <span class="item-gasto__categoria">${cat.label}</span>
       </div>
       <span class="item-gasto__valor">${formatarMoeda(gasto.valor)}</span>
-      <button class="item-gasto__excluir" title="Excluir" data-id="${gasto.id}">✕</button>
+      <div class="item-gasto__acoes">
+        <button class="item-gasto__editar" title="Editar" data-id="${gasto.id}">✎</button>
+        <button class="item-gasto__excluir" title="Excluir" data-id="${gasto.id}">✕</button>
+      </div>
     `;
 
     listaGastos.appendChild(li);
+  });
+
+  document.querySelectorAll('.item-gasto__editar').forEach((btn) => {
+    btn.addEventListener('click', () => abrirEdicao(Number(btn.dataset.id)));
   });
 
   document.querySelectorAll('.item-gasto__excluir').forEach((btn) => {
