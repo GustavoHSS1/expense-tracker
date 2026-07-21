@@ -1,14 +1,25 @@
 // ===== Categorias: rótulo e cor de cada motivo =====
 const CATEGORIAS = {
-  carro: { label: 'Carro', cor: '#3b82f6' },
-  feira: { label: 'Feira', cor: '#22c55e' },
-  saude: { label: 'Saúde', cor: '#06b6d4' },
-  desnecessario: { label: 'Gasto desnecessário', cor: '#ef4444' },
-  outro: { label: 'Outro', cor: '#7c3aed' },
+  transporte: { label: 'Transporte', cor: '#3b82f6' },
+  alimentacao: { label: 'Alimentação', cor: '#f97316' },
+  moradia: { label: 'Moradia', cor: '#8b5cf6' },
+  assinatura: { label: 'Assinatura', cor: '#ec4899' },
+  lazer: { label: 'Lazer', cor: '#eab308' },
+  viagem: { label: 'Viagem', cor: '#06b6d4' },
+  emergencia: { label: 'Emergência', cor: '#dc2626' },
+  investimento: { label: 'Investimento', cor: '#10b981' },
+  feira: { label: 'Feira', cor: '#84cc16' },
+  saude: { label: 'Saúde', cor: '#14b8a6' },
+  desnecessario: { label: 'Gasto desnecessário', cor: '#be123c' },
+  outro: { label: 'Outro', cor: '#6b7280' },
 };
 
 // ===== Estado (persiste no localStorage do navegador) =====
-let gastos = JSON.parse(localStorage.getItem('gastos') || '[]');
+// O filter descarta gastos salvos com uma categoria que não existe mais
+// em CATEGORIAS (ex: teste antigo, categoria renomeada/removida).
+let gastos = JSON.parse(localStorage.getItem('gastos') || '[]')
+  .filter((g) => CATEGORIAS[g.categoria]);
+localStorage.setItem('gastos', JSON.stringify(gastos)); // já regrava sem as entradas inválidas
 
 // ===== Elementos =====
 const overlay = document.getElementById('overlay');

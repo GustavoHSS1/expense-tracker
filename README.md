@@ -12,7 +12,14 @@ App simples de controle de gastos pessoais, feito em HTML, CSS e JavaScript puro
 
 ## Categorias disponíveis
 
-- Carro
+- Transporte
+- Alimentação
+- Moradia
+- Assinatura
+- Lazer
+- Viagem
+- Emergência
+- Investimento
 - Feira
 - Saúde
 - Gasto desnecessário
