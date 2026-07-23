@@ -54,6 +54,10 @@ const ctx = document.getElementById('graficoGastos');
 const modalTitulo = document.getElementById('modalTitulo');
 const btnSubmeter = document.getElementById('btnSubmeter');
 const temaToggle = document.getElementById('temaToggle');
+const campoTipo = document.getElementById('campoTipo');
+const tipoSelect = document.getElementById('tipo');
+const campoParcelas = document.getElementById('campoParcelas');
+const parcelaTotalInput = document.getElementById('parcelaTotal');
 
 const statTotal = document.getElementById('statTotal');
 const statQtd = document.getElementById('statQtd');
@@ -188,6 +192,11 @@ formRegistro.addEventListener('submit', async (e) => {
 // MODAL DE GASTO (abrir/fechar)
 // =========================================
 
+// mostra o campo "em quantas vezes?" só quando o tipo é parcelado
+tipoSelect.addEventListener('change', () => {
+  campoParcelas.classList.toggle('oculto', tipoSelect.value !== 'parcelado');
+});
+
 btnAdicionar.addEventListener('click', () => {
   editandoId = null;
   modalTitulo.textContent = 'Novo gasto';
@@ -195,6 +204,12 @@ btnAdicionar.addEventListener('click', () => {
   formErro.textContent = '';
   formGasto.reset();
   document.getElementById('data').value = new Date().toISOString().slice(0, 10);
+
+  campoTipo.classList.remove('oculto');
+  tipoSelect.disabled = false;
+  tipoSelect.value = 'avulso';
+  campoParcelas.classList.add('oculto');
+
   overlay.classList.add('aberto');
 });
 
@@ -211,6 +226,10 @@ function abrirEdicao(id) {
   document.getElementById('valor').value = gasto.valor;
   document.getElementById('categoria').value = gasto.categoria;
   document.getElementById('data').value = gasto.data.slice(0, 10);
+
+  // tipo (avulso/fixo/parcelado) e número de parcelas não são editáveis depois de criado
+  campoTipo.classList.add('oculto');
+  campoParcelas.classList.add('oculto');
 
   overlay.classList.add('aberto');
 }
@@ -242,7 +261,21 @@ formGasto.addEventListener('submit', async (e) => {
 
   if (!descricao || !valor || valor <= 0 || !data) return;
 
-  const corpo = { descricao, valor, categoria, data, tipo: 'avulso' };
+  const corpo = { descricao, valor, categoria, data };
+
+  // tipo/parcelas só se aplicam na criação (não dá pra editar depois)
+  if (editandoId === null) {
+    corpo.tipo = tipoSelect.value;
+
+    if (corpo.tipo === 'parcelado') {
+      const parcelaTotal = parseInt(parcelaTotalInput.value, 10);
+      if (!parcelaTotal || parcelaTotal < 2) {
+        formErro.textContent = 'Informe em quantas vezes (mínimo 2)';
+        return;
+      }
+      corpo.parcela_total = parcelaTotal;
+    }
+  }
 
   try {
     if (editandoId !== null) {
@@ -267,6 +300,16 @@ formGasto.addEventListener('submit', async (e) => {
 async function excluirGasto(id) {
   try {
     await apiFetch(`/gastos/${id}`, { method: 'DELETE' });
+    await carregarGastos();
+  } catch (erro) {
+    alert(erro.message);
+  }
+}
+
+// marca a parcela do mês como paga (gastos parcelados)
+async function pagarParcela(id) {
+  try {
+    await apiFetch(`/gastos/${id}/pagar`, { method: 'POST' });
     await carregarGastos();
   } catch (erro) {
     alert(erro.message);
@@ -370,12 +413,30 @@ function renderizarLista() {
     const li = document.createElement('li');
     li.className = 'item-gasto';
 
+    // badge extra: "Fixo", "3/6" (em andamento) ou "Concluído" (parcelamento fechado)
+    let badge = '';
+    if (gasto.tipo === 'fixo') {
+      badge = '<span class="item-gasto__badge">Fixo</span>';
+    } else if (gasto.tipo === 'parcelado') {
+      if (gasto.status === 'concluido') {
+        badge = '<span class="item-gasto__badge item-gasto__badge--concluido">Concluído</span>';
+      } else {
+        badge = `<span class="item-gasto__badge">${gasto.parcela_atual}/${gasto.parcela_total}</span>`;
+      }
+    }
+
+    // botão "paguei esse mês" só aparece em parcelado ainda ativo
+    const botaoPagar = (gasto.tipo === 'parcelado' && gasto.status === 'ativo')
+      ? `<button class="item-gasto__pagar" data-id="${gasto.id}">Paguei esse mês</button>`
+      : '';
+
     li.innerHTML = `
       <span class="item-gasto__ponto" style="background:${cat.cor}"></span>
       <div class="item-gasto__info">
         <span class="item-gasto__descricao">${gasto.descricao}</span>
-        <span class="item-gasto__categoria">${cat.label}</span>
+        <span class="item-gasto__categoria">${cat.label} ${badge}</span>
       </div>
+      ${botaoPagar}
       <span class="item-gasto__valor">${formatarMoeda(gasto.valor)}</span>
       <div class="item-gasto__acoes">
         <button class="item-gasto__editar" title="Editar" data-id="${gasto.id}">✎</button>
@@ -392,6 +453,10 @@ function renderizarLista() {
 
   document.querySelectorAll('.item-gasto__excluir').forEach((btn) => {
     btn.addEventListener('click', () => excluirGasto(Number(btn.dataset.id)));
+  });
+
+  document.querySelectorAll('.item-gasto__pagar').forEach((btn) => {
+    btn.addEventListener('click', () => pagarParcela(Number(btn.dataset.id)));
   });
 }
 
