@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planilha de Gastos</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== TELA DE LOGIN / CRIAR CONTA ===== -->
+  <div id="telaAuth" class="tela-auth">
+    <div class="auth-card">
+      <h1>Planilha de Gastos</h1>
+      <p class="topo__subtitulo">Entre para ver seus gastos</p>
+
+      <form id="formLogin" class="auth-form">
+        <label class="campo">
+          E-mail
+          <input type="email" id="loginEmail" required>
+        </label>
+        <label class="campo">
+          Senha
+          <input type="password" id="loginSenha" required>
+        </label>
+        <p id="loginErro" class="auth-erro"></p>
+        <button type="submit" class="botao-primario">Entrar</button>
+      </form>
+
+      <p class="auth-troca" id="linkParaRegistro">
+        Não tem conta? <a href="#" id="linkRegistro">Criar conta</a>
+      </p>
+
+      <form id="formRegistro" class="auth-form auth-form--oculto">
+        <label class="campo">
+          Nome
+          <input type="text" id="registroNome" required>
+        </label>
+        <label class="campo">
+          E-mail
+          <input type="email" id="registroEmail" required>
+        </label>
+        <label class="campo">
+          Senha
+          <input type="password" id="registroSenha" required minlength="6">
+        </label>
+        <p id="registroErro" class="auth-erro"></p>
+        <button type="submit" class="botao-primario">Criar conta</button>
+      </form>
+
+      <p class="auth-troca auth-form--oculto" id="linkParaLogin">
+        Já tem conta? <a href="#" id="linkLogin">Entrar</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- ===== APP (só aparece depois do login) ===== -->
+  <div class="pagina auth-form--oculto" id="app">
+
+    <header class="topo">
+      <div class="topo__titulo">
+        <h1>Planilha de Gastos</h1>
+        <p class="topo__subtitulo">Controle seus gastos por categoria</p>
+      </div>
+      <button id="temaToggle" class="botao-tema" aria-label="Alternar tema claro/escuro">🌙</button>
+      <button id="btnLogout" class="botao-tema" aria-label="Sair da conta" title="Sair">❌</button>
+      <button id="btnAdicionar" class="botao-gasto">+ Adicionar gasto</button>
+    </header>
+
+    <!-- ===== CARDS DE RESUMO ===== -->
+    <section class="stats">
+      <div class="stat-card">
+        <div class="stat-card__icone stat-card__icone--roxo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+        </div>
+        <div class="stat-card__texto">
+          <span class="stat-card__label">Total gasto</span>
+          <span class="stat-card__valor" id="statTotal">R$ 0,00</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card__icone stat-card__icone--ambar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </div>
+        <div class="stat-card__texto">
+          <span class="stat-card__label">Gastos registrados</span>
+          <span class="stat-card__valor" id="statQtd">0</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card__icone stat-card__icone--vermelho">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2.59 12.58a2 2 0 0 1 0-2.83L9.76 2.58a2 2 0 0 1 2.83 0l7.99 8a2 2 0 0 1 0 2.83Z"/><circle cx="8.5" cy="8.5" r="1.5"/></svg>
+        </div>
+        <div class="stat-card__texto">
+          <span class="stat-card__label">Maior categoria</span>
+          <span class="stat-card__valor stat-card__valor--menor" id="statMaiorCategoria">—</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card__icone stat-card__icone--verde">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <div class="stat-card__texto">
+          <span class="stat-card__label">Média por gasto</span>
+          <span class="stat-card__valor" id="statMedia">R$ 0,00</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== GRID PRINCIPAL ===== -->
+    <main class="grid-principal">
+
+      <!-- ===== CARD: lista de gastos ===== -->
+      <section class="card">
+        <h2 class="card__titulo">Meus gastos</h2>
+
+        <ul id="listaGastos" class="lista-gastos"></ul>
+        <p id="listaVazia" class="lista-vazia">Nenhum gasto adicionado ainda.</p>
+      </section>
+
+      <!-- ===== CARD: gráfico por categoria ===== -->
+      <section class="card">
+        <h2 class="card__titulo">Despesas por categoria</h2>
+
+        <div class="grafico-bloco">
+          <div class="grafico-container">
+            <canvas id="graficoGastos"></canvas>
+            <p id="graficoVazio" class="grafico-vazio">Adicione um gasto<br>para ver o gráfico</p>
+          </div>
+
+          <ul id="legenda" class="legenda"></ul>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ===== MODAL: adicionar/editar gasto ===== -->
+  <div id="overlay" class="overlay">
+    <form id="formGasto" class="modal">
+      <h2 id="modalTitulo">Novo gasto</h2>
+
+      <label class="campo">
+        Descrição
+        <input type="text" id="descricao" placeholder="Ex: Gasolina do carro" required>
+      </label>
+
+      <label class="campo">
+        Valor (R$)
+        <input type="number" id="valor" placeholder="0,00" min="0.01" step="0.01" required>
+      </label>
+
+      <label class="campo">
+        Data
+        <input type="date" id="data" required>
+      </label>
+
+      <label class="campo">
+        Motivo
+        <select id="categoria" required>
+          <option value="transporte">Transporte</option>
+          <option value="alimentacao">Alimentação</option>
+          <option value="moradia">Moradia</option>
+          <option value="assinatura">Assinatura</option>
+          <option value="lazer">Lazer</option>
+          <option value="viagem">Viagem</option>
+          <option value="emergencia">Emergência</option>
+          <option value="investimento">Investimento</option>
+          <option value="feira">Feira</option>
+          <option value="saude">Saúde</option>
+          <option value="desnecessario">Gasto desnecessário</option>
+          <option value="outro">Outro</option>
+        </select>
+      </label>
+
+      <p id="formErro" class="auth-erro"></p>
+
+      <div class="modal__botoes">
+        <button type="button" id="btnCancelar" class="botao-secundario">Cancelar</button>
+        <button type="submit" id="btnSubmeter" class="botao-primario">Adicionar</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
